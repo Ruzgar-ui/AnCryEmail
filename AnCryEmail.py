@@ -10,10 +10,30 @@ from sys import stdout
 from time import sleep
 
 gelen_kutusu = "gelen_kutusu.txt"
+kullanıcılar = "kullanıcılar.txt"
+
+def get_email_credentials():
+    # E-posta bilgilerini al
+    text = 'Ankara üniversitesi mail adresinizi giriniz.\nÖrnek: öğrenci_numarası@ogrenci.ankara.edu.tr'
+    passwd = 'Mail adresinizin şifresini giriniz.\nŞifreniz yoksa şifre almak için: https://kds.ankara.edu.tr/'
+    speed = 0.04
+    for char in text:
+        stdout.write(f"{char}")
+        stdout.flush()
+        sleep(speed)
+    username = input("\n-->")
+    for char in passwd:
+        stdout.write(f"{char}")
+        stdout.flush()
+        sleep(speed)
+    password = input("\n-->")
+    return username, password
 
 def connect_to_mail_server():
-    # Kayıtlı hesapları gösterir.
-    kullanıcılar = "kullanıcılar.txt"
+    # IMAP sunucusuna bağlan
+    mail = imaplib.IMAP4_SSL("80.251.40.61", 993)
+
+    # Kayıtlı hesapları göster
     if os.path.exists(kullanıcılar):
         with open(kullanıcılar, 'r') as file:
             accounts = file.readlines()
@@ -28,76 +48,30 @@ def connect_to_mail_server():
                         choice = int(input("\nBir hesap seçin (1, 2, ...): "))
                         if 1 <= choice <= len(accounts):
                             username, password = accounts[choice - 1].strip().split(',')
+                            mail.login(username, password)
+                            print("Mail sunucusuna bağlanıldı.")
+                            return mail
                         else:
                             print("Geçersiz seçim. Lütfen geçerli bir hesap numarası girin.")
                     except ValueError:
                         print("Lütfen geçerli bir sayı girin.")
                 elif action == 'y':
-                        # E-posta bilgilerini al
-                        text = 'Ankara üniversitesi mail adresinizi giriniz.\nÖrnek: öğrenci_numarası@ogrenci.ankara.edu.tr'
-                        passwd = 'Mail adresinizin şifresini giriniz.\nŞifreniz yoksa şifre almak için: https://kds.ankara.edu.tr/'
-                        speed = 0.04
-                        for char in text:
-                            stdout.write(f"{char}")
-                            stdout.flush()
-                            sleep(speed)
-                        username = input("\n-->")
-                        for char in passwd:
-                            stdout.write(f"{char}")
-                            stdout.flush()
-                            sleep(speed)
-                        password = input("\n-->")
-                        # Hesabı dosyaya kaydet
-                        with open(kullanıcılar, 'a') as file:
-                            file.write(f"{username},{password}\n")
-                        print(f"{username} hesabı kaydedildi.")
+                    username, password = get_email_credentials()
                 else:
                     print("Geçersiz seçenek!")
             else:
                 print("Kayıtlı mail hesabı bulunamadı.")
-                # E-posta bilgilerini al
-                text = 'Ankara üniversitesi mail adresinizi giriniz.\nÖrnek: öğrenci_numarası@ogrenci.ankara.edu.tr'
-                passwd = 'Mail adresinizin şifresini giriniz.\nŞifreniz yoksa şifre almak için: https://kds.ankara.edu.tr/'
-                speed = 0.04
-                for char in text:
-                    stdout.write(f"{char}")
-                    stdout.flush()
-                    sleep(speed)
-                username = input("\n-->")
-                for char in passwd:
-                    stdout.write(f"{char}")
-                    stdout.flush()
-                    sleep(speed)
-                password = input("\n-->")
-                # Hesabı dosyaya kaydet
-                with open(kullanıcılar, 'a') as file:
-                    file.write(f"{username},{password}\n")
-                print(f"{username} hesabı kaydedildi.")
+                username, password = get_email_credentials()
     else:
         print("Kayıtlı mail hesap dosyası bulunamadı.")
-        # E-posta bilgilerini al
-        text = 'Ankara üniversitesi mail adresinizi giriniz.\nÖrnek: öğrenci_numarası@ogrenci.ankara.edu.tr'
-        passwd = 'Mail adresinizin şifresini giriniz.\nŞifreniz yoksa şifre almak için: https://kds.ankara.edu.tr/'
-        speed = 0.04
-        for char in text:
-            stdout.write(f"{char}")
-            stdout.flush()
-            sleep(speed)
-        username = input("\n-->")
-        for char in passwd:
-            stdout.write(f"{char}")
-            stdout.flush()
-            sleep(speed)
-        password = input("\n-->")
+        username, password = get_email_credentials()
+    try:
+        mail.login(username, password)
+        print("Mail sunucusuna bağlanıldı.")
         # Hesabı dosyaya kaydet
         with open(kullanıcılar, 'a') as file:
             file.write(f"{username},{password}\n")
         print(f"{username} hesabı kaydedildi.")
-    # IMAP sunucusuna bağlan
-    mail = imaplib.IMAP4_SSL("80.251.40.61", 993)
-    try:
-        mail.login(username, password)
-        print("Mail sunucusuna bağlanıldı.")
     except:
         print("Sunucuya bağlanma başarısız oldu.\nLütfen mail adresinizi ve şifrenizi kontrol ediniz.")
         return None
