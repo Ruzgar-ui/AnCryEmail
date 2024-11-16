@@ -6,7 +6,7 @@
 
 ## Features
 
--   Send A Mail
+-   ~~Send A Mail~~
 -   Notifications
 
 ## Install
