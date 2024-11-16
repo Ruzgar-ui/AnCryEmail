@@ -11,7 +11,7 @@
 
 ## Install
 
-1. Download source code from [here](www.google.com)
+1. Download source code from [here](https://codeload.github.com/Ruzgar-ui/AnCryEmail/zip/refs/heads/main)
 2. Run (python AnCryEmail.py)
 
 ## License
