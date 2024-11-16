@@ -5,7 +5,11 @@
 import email
 import imaplib
 import os
+import smtplib
+import webbrowser
 from email.header import decode_header
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from sys import stdout
 from time import sleep
 
@@ -50,7 +54,7 @@ def connect_to_mail_server():
                             username, password = accounts[choice - 1].strip().split(',')
                             mail.login(username, password)
                             print("Mail sunucusuna bağlanıldı.")
-                            return mail
+                            return mail, username, password
                         else:
                             print("Geçersiz seçim. Lütfen geçerli bir hesap numarası girin.")
                     except ValueError:
@@ -75,7 +79,7 @@ def connect_to_mail_server():
     except:
         print("Sunucuya bağlanma başarısız oldu.\nLütfen mail adresinizi ve şifrenizi kontrol ediniz.")
         return None
-    return mail
+    return mail, username, password
 
 def check_mail_count(mail):
     """Gelen kutusundaki mesaj sayısını al."""
@@ -154,18 +158,33 @@ def mark_as_read(mail, message_ids):
 
 def save_read_mail_id_to_file(msg_id, subject, from_, body):
     """Okunmuş mail ID'sini ve içeriğini dosyaya kaydet."""
+    if subject and msg_id and from_ and body:
+    # tarayıcıda mailleri görmek için kaydet
+        folder_name = "".join(c if c.isalnum() else "_" for c in subject)
+        if not os.path.isdir(folder_name):
+            # index.html dosyasını oluştur
+            os.mkdir(folder_name)
+        filename = "index.html"
+        filepath = os.path.join(folder_name, filename)
+        # Dosyaya yaz
+        try:
+            with open(filepath, "w", encoding="utf-8") as f:
+                f.write(body)
+        except Exception as e:
+            print(f"Dosya açılamadı: {e}")
     with open(gelen_kutusu, "a", encoding="utf-8") as f:
         f.write(f"ID: {msg_id.decode('utf-8')}\n")
-        f.write(f"Subject: {subject}\n")
-        f.write(f"From: {from_}\n")
-        f.write(f"Body:\n{body}\n\n" + "="*50 + "\n")
+        f.write(f"Konu: {subject}\n")
+        f.write(f"Kimden: {from_}\n")
+        f.write(f"Mesaj içeriği:\n{body}\n\n" + "="*50 + "\n")
+    webbrowser.open(filepath)
 
 def print_mail_info(msg_id, subject, from_, body):
     """Mesajın bilgilerini ekrana yazdır."""
     print(f"ID: {msg_id.decode('utf-8')}")
-    print(f"Subject: {subject}")
-    print(f"From: {from_}")
-    print(f"Body:\n{body}")
+    print(f"Konu: {subject}")
+    print(f"Kimden: {from_}")
+    print(f"Mesaj içeriği:\n{body}")
     print("="*50)
 
 def read_read_mail_ids_from_file():
@@ -176,9 +195,92 @@ def read_read_mail_ids_from_file():
     with open(gelen_kutusu, "r", encoding="utf-8") as f:
         return [line.split(": ")[1].strip() for line in f.readlines() if line.startswith("ID: ")]
 
+def new_mails(mail):
+    try:
+        print("Yeni E-mail gelmesini burada bekleyeceğim...\n[-] ", end="")
+        while True:
+            # Gelen kutusundaki yeni mailleri kontrol et
+            status, messages = mail.search(None, 'UNSEEN')  # 'UNSEEN' sadece okunmamış mailleri getirir
+            message_ids = messages[0].split()
+            mark_as_read(mail, message_ids)
+            if status == "OK":
+                # Yeni gelen e-postaların ID'lerini al
+                for msg_id in messages[0].split():
+                    # E-posta içeriğini al
+                    status, msg_data = mail.fetch(msg_id, "(RFC822)")
+                    
+                    for response_part in msg_data:
+                        if isinstance(response_part, tuple):
+                            # E-posta mesajını parse et
+                            msg = email.message_from_bytes(response_part[1])
+                            
+                            # E-posta başlıklarını al
+                            subject, encoding = decode_header(msg["Subject"])[0]
+                            if isinstance(subject, bytes):
+                                # Eğer başlık bytes olarak gelirse, decode et
+                                subject = subject.decode(encoding if encoding else "utf-8")
+                            from_ = msg.get("From")
+                            
+                            print(f"Yeni e-posta geldi!")
+                            print(f"Kimden: {from_}")
+                            print(f"Konu: {subject}")
+                            
+                            # Eğer e-posta birden fazla parçada oluşuyorsa
+                            if msg.is_multipart():
+                                for part in msg.walk():
+                                    # E-posta metni
+                                    content_type = part.get_content_type()
+                                    content_disposition = str(part.get("Content-Disposition"))
+                                    if "attachment" not in content_disposition:
+                                        if content_type == "text/plain":
+                                            body = part.get_payload(decode=True).decode()
+                                            print(f"Mesaj içeriği: {body}\n")
+                            else:
+                                # Eğer tek parça bir mesaj ise
+                                body = msg.get_payload(decode=True).decode()
+                                print(f"Mesaj içeriği: {body}\n")
+            # 10 saniyede bir kontrol et
+            sleep(10)
+    except Exception as e:
+        print(f"Bir hata oluştu: {e}")
+
+def send_mails(username, password):
+    # Alıcı e-posta adresi
+
+    # E-posta başlıkları ve içeriği
+    print(f"Kimden: {username}")
+    receiver_mail = input("Kime: ")
+    subject = input("Başlık: ")
+    body = input("Mesaj: ")
+    
+    # E-posta başlıklarını ve içeriğini birleştirme
+    message = f"From: {username}\r\n"
+    message += f"To: {receiver_mail}\r\n"
+    message += f"Subject: {subject}\r\n"
+    message += f"\r\n"  # Başlık ve içerik arasındaki boş satır
+    message += body
+    message = message.encode('utf-8')
+    # SMTP sunucusuna bağlanma ve e-posta gönderme
+    try:
+        # SSL bağlantısını başlat
+        server = smtplib.SMTP_SSL('80.251.40.61', 465)
+
+        # Gmail hesabına giriş yap
+        server.login(username, password)
+
+        # E-posta gönder
+        server.sendmail(username, receiver_mail, message)
+        print("E-posta başarıyla gönderildi!")
+
+    except Exception as e:
+        print(f"Hata oluştu: {e}")
+
+    finally:
+        server.quit()  # Bağlantıyı kapat
+
 def main():
     # E-posta sunucusuna bağlan
-    mail = connect_to_mail_server()
+    mail, username, password = connect_to_mail_server()
     message_ids = None
 
     # Mesajların kimliklerini al
@@ -189,6 +291,32 @@ def main():
     if 'message_ids' in locals() and message_ids:
         mark_as_read(mail, message_ids)
     
+    try:
+        while True:
+            print("""
+    #########################################
+    ##                                     ##
+    ##   1-) Mail göndermek istiyorum.     ##
+    ##   2-) Mail gelirse bana haber ver.  ##
+    ##   3-) Çıkış yap.                    ##
+    ##                                     ##
+    #########################################
+            """)
+            choice = input("\n[*] ")
+            # Mail gönder
+            if int(choice) == 1 and True and mail is not None:
+                send_mails(username, password)
+            # Yeni mail gelmesini bekle
+            elif int(choice) == 2 and True and mail is not None:
+                new_mails(mail)
+            elif int(choice) == 3 and True and mail is not None:
+                print("Çıkış yapılıyor...")
+                break
+            else:
+                print("Hatalı seçim yaptınız.")
+    except Exception as e:
+        print(f"Hata ile karşılaşıldı: {e}")
+
     # Çıkış yap
     if mail is not None:
         mail.logout()
@@ -197,3 +325,4 @@ if __name__ == "__main__":
     main()
 # Her yeni mail geldiğinde yazdıracak bildirim verip terminale yazdıracak
 # Terminalden cevap verilebilecek
+# F12 tuşuna basınca duracak
