@@ -6,13 +6,25 @@ import email
 import imaplib
 import os
 import smtplib
-import webbrowser
+#import webbrowser
 from email.header import decode_header
 from sys import stdout
 from time import sleep
 
+import colorama
+from win10toast import ToastNotifier
+
 gelen_kutusu = "gelen_kutusu.txt"
 kullanıcılar = "kullanıcılar.txt"
+
+cyan="\033[96m"
+purple="\033[95m"
+blue="\033[94m"
+green="\033[92m"
+red="\033[91m"
+reset="\033[00m"
+
+colorama.init()
 
 def get_email_credentials():
     # E-posta bilgilerini al
@@ -43,15 +55,17 @@ def connect_to_mail_server():
                 print("Kayıtlı Hesaplar:")
                 for i, account in enumerate(accounts, 1):
                     username, password = account.strip().split(',')
-                    print(f"Hesap {i}: Kullanıcı Adı: {username}, Şifre: {password}")
-                action = input("\nFarklı hesaba giriş yapmak için 'y', kayıtlı hesaba giriş yapmak için 'g' yazın: ").lower()
+                    print(f"{blue}Hesap {i}: {red}Kullanıcı Adı:{green} {username},{red} Şifre:{green} {password}")
+                print(f"\n{cyan}Farklı hesaba giriş yapmak için 'y', kayıtlı hesaba giriş yapmak için 'g' yazın:{reset} ", end="")
+                action = input("")
                 if action == 'g':
                     try:
+                        print(f"{blue}", end="")
                         choice = int(input("\nBir hesap seçin (1, 2, ...): "))
                         if 1 <= choice <= len(accounts):
                             username, password = accounts[choice - 1].strip().split(',')
                             mail.login(username, password)
-                            print("Mail sunucusuna bağlanıldı.")
+                            print(f"Mail sunucusuna bağlanıldı.{green}")
                             return mail, username, password
                         else:
                             print("Geçersiz seçim. Lütfen geçerli bir hesap numarası girin.")
@@ -69,7 +83,7 @@ def connect_to_mail_server():
         username, password = get_email_credentials()
     try:
         mail.login(username, password)
-        print("Mail sunucusuna bağlanıldı.")
+        print(f"{blue}Mail sunucusuna bağlanıldı.{green}")
         # Hesabı dosyaya kaydet
         with open(kullanıcılar, 'a') as file:
             file.write(f"{username},{password}\n")
@@ -194,19 +208,8 @@ def read_read_mail_ids_from_file():
         return [line.split(": ")[1].strip() for line in f.readlines() if line.startswith("ID: ")]
 
 def new_mails(mail):
-    while True:
-        try:
-            from win10toast import ToastNotifier
-            break
-        except ModuleNotFoundError:
-            print("Bildirim paketi bulunamadı yükleniyor..")
-            try:
-                os.system("pip install win10toast > nul 2>&1")
-                print("Bildirim paketi yüklendi.")
-            except Exception as e:
-                print(f"Hata: {e}")
     try:
-        print("Yeni E-mail gelmesini burada bekleyeceğim...\n[-] ", end="")
+        print(f"{red}Yeni E-mail gelmesini burada bekleyeceğim...\n{green}[{red}-{green}]{reset} ", end="")
         while True:
             # Gelen kutusundaki yeni mailleri kontrol et
             status, messages = mail.search(None, 'UNSEEN')  # 'UNSEEN' sadece okunmamış mailleri getirir
@@ -257,11 +260,15 @@ def new_mails(mail):
 
 def send_mails(username, password):
     # E-posta başlıkları ve içeriği
-    print(f"Kimden: {username}")
-    receiver_mail = input("Kime: ")
-    subject = input("Başlık: ")
-    body = input("Mesaj: ")
-    
+    print(f"{cyan}Kimden:{red} {username}")
+    print(f"{cyan}Kime: {red}", end="")
+    receiver_mail = input("")
+    print(f"{cyan}Başlık: {red}", end="")
+    subject = input("")
+    print(f"{cyan}Mesaj: {red}", end="")
+    body = input("")
+    print(f"{reset}", end="")
+
     # E-posta başlıklarını ve içeriğini birleştirme
     message = f"From: {username}\r\n"
     message += f"To: {receiver_mail}\r\n"
@@ -279,10 +286,11 @@ def send_mails(username, password):
 
         # E-posta gönder
         server.sendmail(username, receiver_mail, message)
-        print("E-posta başarıyla gönderildi!")
+        print(f"{purple}E-posta başarıyla gönderildi!{reset}")
 
     except Exception as e:
         print(f"Hata oluştu: {e}")
+        print(f"{red}Girdiğiniz mail adresiniz kontrol edin!{reset}")
 
     finally:
         server.quit()  # Bağlantıyı kapat
@@ -302,16 +310,17 @@ def main():
     
     try:
         while True:
-            print("""
+            print(f"""{green}
     #########################################
     ##                                     ##
-    ##   1-) Mail göndermek istiyorum.     ##
-    ##   2-) Mail gelirse bana haber ver.  ##
-    ##   3-) Çıkış yap.                    ##
+    ##   {red}1-) Mail göndermek istiyorum.   {green}  ##
+    ##   {red}2-) Mail gelirse bana haber ver.{green}  ##
+    ##   {red}3-) Çıkış yap.                  {green}  ##
     ##                                     ##
     #########################################
             """)
-            choice = input("\n[*] ")
+            print(f"\n{green}[{red}*{green}]{reset} ", end="")
+            choice = input("")
             # Mail gönder
             if int(choice) == 1 and True and mail is not None:
                 send_mails(username, password)
