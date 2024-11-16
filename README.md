@@ -3,11 +3,12 @@
 ## New Update!
 -   Now you can send mails.
 -   Notifies incoming emails.
+-   Gives you notification when new e-mail arrives.
 
 ## Features
 
 -   ~~Send A Mail~~
--   Notifications
+-   ~~Notifications~~
 
 ## Install
 
