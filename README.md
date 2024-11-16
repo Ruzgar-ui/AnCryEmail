@@ -2,7 +2,7 @@
 
 ## New Update!
 -   Now you can send mails.
--   Now Notifies incoming emails.
+-   Notifies incoming emails.
 
 ## Features
 
