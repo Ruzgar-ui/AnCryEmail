@@ -8,8 +8,6 @@ import os
 import smtplib
 import webbrowser
 from email.header import decode_header
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from sys import stdout
 from time import sleep
 
