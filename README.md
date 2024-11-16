@@ -1,4 +1,4 @@
-# AnCryEmail V1.0
+# AnCryEmail V1.1.0
 
 ## New Update!
 -   Now you can send mails.
