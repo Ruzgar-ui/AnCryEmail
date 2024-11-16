@@ -175,7 +175,7 @@ def save_read_mail_id_to_file(msg_id, subject, from_, body):
         f.write(f"Konu: {subject}\n")
         f.write(f"Kimden: {from_}\n")
         f.write(f"Mesaj içeriği:\n{body}\n\n" + "="*50 + "\n")
-    webbrowser.open(filepath)
+    #webbrowser.open(filepath)
 
 def print_mail_info(msg_id, subject, from_, body):
     """Mesajın bilgilerini ekrana yazdır."""
@@ -194,6 +194,17 @@ def read_read_mail_ids_from_file():
         return [line.split(": ")[1].strip() for line in f.readlines() if line.startswith("ID: ")]
 
 def new_mails(mail):
+    while True:
+        try:
+            from win10toast import ToastNotifier
+            break
+        except ModuleNotFoundError:
+            print("Bildirim paketi bulunamadı yükleniyor..")
+            try:
+                os.system("pip install win10toast > nul 2>&1")
+                print("Bildirim paketi yüklendi.")
+            except Exception as e:
+                print(f"Hata: {e}")
     try:
         print("Yeni E-mail gelmesini burada bekleyeceğim...\n[-] ", end="")
         while True:
@@ -219,6 +230,8 @@ def new_mails(mail):
                                 subject = subject.decode(encoding if encoding else "utf-8")
                             from_ = msg.get("From")
                             
+                            my_notification = ToastNotifier()
+                            my_notification.show_toast("Yeni E-posta!", f"{from_} sana bir mail gönderdi.")
                             print(f"Yeni e-posta geldi!")
                             print(f"Kimden: {from_}")
                             print(f"Konu: {subject}")
@@ -243,8 +256,6 @@ def new_mails(mail):
         print(f"Bir hata oluştu: {e}")
 
 def send_mails(username, password):
-    # Alıcı e-posta adresi
-
     # E-posta başlıkları ve içeriği
     print(f"Kimden: {username}")
     receiver_mail = input("Kime: ")
