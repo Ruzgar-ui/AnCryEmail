@@ -341,6 +341,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-# Her yeni mail geldiğinde yazdıracak bildirim verip terminale yazdıracak
-# Terminalden cevap verilebilecek
-# F12 tuşuna basınca duracak
