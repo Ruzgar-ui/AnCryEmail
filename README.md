@@ -18,17 +18,11 @@
 
 ## ✅Setup
 
-1. Run setup.bat
-2. Run code (python AnCryEmail.py)
+3. Run setup.bat
 
 ## ✔️Usage
-```sh
-git clone https://github.com/Dogu589/AnkOsint
-cd AnkOsint
 
-pip install -r requirements.txt
-python AnkOsint.py
-```
+4. Run code (python AnCryEmail.py)
 
 ## ⚖️License
 
